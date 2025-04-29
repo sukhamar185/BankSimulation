@@ -26,9 +26,9 @@ class BankAccount {
 
 class Customer implements Runnable {
     private static final Logger logger = LogManager.getLogger(Customer.class);
-    private BankAccount account;
-    private String action;
-    private int amount;
+    private final BankAccount account;
+    private final String action;
+    private final int amount;
 
     public Customer(BankAccount account, String action, int amount) {
         this.account = account;
@@ -36,14 +36,18 @@ class Customer implements Runnable {
         this.amount = amount;
     }
 
+    @Override
     public void run() {
-        logger.debug("Customer started with action: {} and amount: {}", action, amount);
-        if (action.equalsIgnoreCase("deposit")) {
-            account.deposit(amount);
-        } else if (action.equalsIgnoreCase("withdraw")) {
-            account.withdraw(amount);
-        } else {
-            logger.error("Unknown action: {}", action);
+        logger.debug("Customer thread started: action={}, amount={}", action, amount);
+        switch (action.toLowerCase()) {
+            case "deposit":
+                account.deposit(amount);
+                break;
+            case "withdraw":
+                account.withdraw(amount);
+                break;
+            default:
+                logger.error("Unknown action: {}", action);
         }
     }
 }
@@ -51,12 +55,13 @@ class Customer implements Runnable {
 public class BankSimulation2 {
     private static final Logger logger = LogManager.getLogger(BankSimulation2.class);
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         BankAccount account = new BankAccount();
-        Thread[] customers = new Thread[3];
-        customers[0] = new Thread(new Customer(account, "deposit", 500));
-        customers[1] = new Thread(new Customer(account, "withdraw", 700));
-        customers[2] = new Thread(new Customer(account, "withdraw", 600));
+        Thread[] customers = {
+            new Thread(new Customer(account, "deposit", 500)),
+            new Thread(new Customer(account, "withdraw", 700)),
+            new Thread(new Customer(account, "withdraw", 600))
+        };
 
         logger.info("Bank Simulation 2 Started");
 
@@ -65,7 +70,11 @@ public class BankSimulation2 {
         }
 
         for (Thread t : customers) {
-            t.join();
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                logger.error("Thread interrupted", e);
+            }
         }
 
         logger.info("Final Balance: {}", account.getBalance());
