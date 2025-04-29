@@ -1,17 +1,21 @@
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 class BankAccount {
+    private static final Logger logger = LogManager.getLogger(BankAccount.class);
     private int balance = 1000;
 
     public synchronized void deposit(int amount) {
         balance += amount;
-        System.out.println("Deposited " + amount + ", Balance: " + balance);
+        logger.info("Deposited {}, New Balance: {}", amount, balance);
     }
 
     public synchronized void withdraw(int amount) {
         if (balance >= amount) {
             balance -= amount;
-            System.out.println("Withdrawn " + amount + ", Balance: " + balance);
+            logger.info("Withdrawn {}, New Balance: {}", amount, balance);
         } else {
-            System.out.println("Insufficient funds for " + amount);
+            logger.warn("Insufficient funds for withdrawal of {}. Current Balance: {}", amount, balance);
         }
     }
 
@@ -21,6 +25,7 @@ class BankAccount {
 }
 
 class Customer implements Runnable {
+    private static final Logger logger = LogManager.getLogger(Customer.class);
     private BankAccount account;
     private String action;
     private int amount;
@@ -32,21 +37,28 @@ class Customer implements Runnable {
     }
 
     public void run() {
-        if (action.equals("deposit")) {
+        logger.debug("Customer started with action: {} and amount: {}", action, amount);
+        if (action.equalsIgnoreCase("deposit")) {
             account.deposit(amount);
-        } else if (action.equals("withdraw")) {
+        } else if (action.equalsIgnoreCase("withdraw")) {
             account.withdraw(amount);
+        } else {
+            logger.error("Unknown action: {}", action);
         }
     }
 }
 
 public class BankSimulation2 {
+    private static final Logger logger = LogManager.getLogger(BankSimulation2.class);
+
     public static void main(String[] args) throws InterruptedException {
         BankAccount account = new BankAccount();
         Thread[] customers = new Thread[3];
         customers[0] = new Thread(new Customer(account, "deposit", 500));
         customers[1] = new Thread(new Customer(account, "withdraw", 700));
         customers[2] = new Thread(new Customer(account, "withdraw", 600));
+
+        logger.info("Bank Simulation 2 Started");
 
         for (Thread t : customers) {
             t.start();
@@ -56,6 +68,6 @@ public class BankSimulation2 {
             t.join();
         }
 
-        System.out.println("Final Balance: " + account.getBalance());
+        logger.info("Final Balance: {}", account.getBalance());
     }
 }
